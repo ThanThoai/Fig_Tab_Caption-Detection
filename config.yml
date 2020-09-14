@@ -1,0 +1,14 @@
+files:
+    model : './model/model_final.pth'
+    config : './configs/DLA_mask_rcnn_R_101_FPN_3x.yaml'
+
+dir:
+    input : './PDF_INPUT'
+    output : './PDF_OUTPUT'
+    upload : './UPLOAD'
+    image  : './IMAGE'
+
+models:
+    device : 'cuda'
+    score_thresh : 0.75
+    instances_confidence_thresh : 0.75

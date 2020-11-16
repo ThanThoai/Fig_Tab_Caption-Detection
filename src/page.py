@@ -248,10 +248,82 @@ class Page(object):
 				result.append(item)
 		return result
 
-	def run(self):
+	def extract(self):
+		print(len(self.lst_obj))
+		print(len(self.lst_text))
+		result = {
+			"num_page" : self.page_index + 1, 
+			"height" : self.height, 
+			"width" : self.width, 
+			"detected" : []
+		}
+
+		for obj in self.lst_obj:
+			item = {
+				"type" : None,
+				"text" : "",
+				"bbox" : [0, 0, 0 ,0],
+				"caption" : "",
+				"score" : 0.0,
+				"bbox_caption" : [0, 0, 0, 0]
+			}
+			caption = obj.getCaption()
+			if caption:
+				type_ = self.getType(caption)
+				if type_ == 1:
+					item['type'] = "Figure"
+				else:
+					item['type'] = "Table"
+				item['bbox'] = [obj.bbox.xmin, obj.bbox.ymin, obj.bbox.xmax, obj.bbox.ymax]
+				item['score'] = obj.getScore().tolist()
+				bbox_cap = obj.getBboxCaption()
+				item['bbox_caption'] = [bbox_cap[0], bbox_cap[1], bbox_cap[2], bbox_cap[3]]
+				item['caption'] = caption
+				result['detected'].append(item)
+			else:
+				item['type'] = obj._type
+				item['bbox'] = [obj.bbox.xmin, obj.bbox.ymin, obj.bbox.xmax, obj.bbox.ymax]
+				item['score'] = obj.getScore().tolist()
+				result['detected'].append(item)
+		for text in self.lst_text:
+			item = {
+				"type" : None,
+				"text" : "",
+				"bbox" : [0, 0, 0 ,0],
+				"caption" : "",
+				"score" : 0.0,
+				"bbox_caption" : [0, 0, 0, 0]
+			}
+			item['type'] = text.type
+			item['text'] = self.getTextInBox(text.bbox)
+			item['bbox'] = [text.bbox.xmin, text.bbox.ymin, text.bbox.xmax, text.bbox.ymax]
+			item['score'] = text.getScore() if isinstance(text.getScore(), float) else text.getScore().tolist()
+			result['detected'].append(item)
+		return result
+
+ 
+	def preprcoess(self, dict_info):
+		result = []
+		for info in dict_info:
+			if info['type'] in ['Text', 'Title']:
+				flag = True
+				bbox = info['bbox']
+				for obj in self.lst_obj:
+					bbox_cap = obj.getBboxCaption()
+					if len(bbox_cap) > 0 and Box(bbox).iou(Box(bbox_cap)) > 0.7:
+						flag = False
+						break
+				if flag:
+					result.append(Text(bbox = bbox, score = info['score'], type = info['type']))
+		return result
+			
+	def run(self,dict_info = None, return_all = False):
 		self.detectCaption()
 		# for obj in self.lst_obj:
 		# 	obj.update()
+		if return_all:
+			result = self.preprcoess(dict_info)
+			self.lst_text = result
 
 
 	def getType(self, text):

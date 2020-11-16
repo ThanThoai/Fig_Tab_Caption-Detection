@@ -115,6 +115,8 @@ class AsyncPredictor:
 
 
 class Model(object):
+    
+    CLASSES = ['Text', 'Title', 'List', 'Table', 'Figure']
     def __init__(self, config):
         self.config = config
         self.cfg = self.__set_config()
@@ -276,6 +278,57 @@ class Model(object):
         print('[INFO] Time to detect: %0.2fs' % (time.time() - t0))
         return page
 
+    def predict_v2(self, image_path, page):
+        import time
+        t0 = time.time()
+        print("[INFO] Process............................")
+        img = self.readImage(image_path, format='BGR')
+        page_index = int((image_path.split('/')[-1]).split('.')[0])
+        predictions = self.predictor.predict(img)
+        lst_text = []
+        lst_obj = []
+        lst_result = []
+        boxes = predictions["instances"].pred_boxes
+        classes = predictions["instances"].pred_classes
+        scores = predictions["instances"].scores
+        for i in tqdm(range(len(classes))):
+            temp = {
+                'type': '',
+                'bbox': None,
+                'score' : 0.0
+            }
+            temp['bbox'] = [i for i in boxes[i].tensor.cpu().numpy()[0].astype('float')]
+            temp['score'] = scores[i]
+            bbox = boxes[i].tensor.cpu().numpy()[0].astype('float')
+            if classes[i] == 0 or classes[i] == 1:
+                score = scores[i]
+                text = Text(bbox, score = score, type = self.CLASSES[classes[i]])
+                lst_text.append(text)
+                temp['type'] = self.CLASSES[classes[i]]
+            elif classes[i] == 3:
+                # bbox = boxes[i].tensor.cpu().numpy()[0].astype('float')
+                score = scores[i]
+                table = Obj(bbox, score, type='Table')
+                lst_obj.append(table)
+                temp['type'] = self.CLASSES[classes[i]]
+            elif classes[i] == 4:
+                # bbox = boxes[i].tensor.cpu().numpy()[0].astype('float')
+                score = scores[i]
+                figure = Obj(bbox, score, type='Figure')
+                lst_obj.append(figure)
+                temp['type'] = self.CLASSES[classes[i]]
+            else:
+                score = scores[i]
+                text = Text(bbox, score = score)
+                lst_text.append(text)
+                temp['type'] = self.CLASSES[classes[0]]
+            lst_result.append(temp)
+        page.setLstObj(lst_obj)
+        page.setLstText(lst_text)
+        # page.virtualize()
+        print('[INFO] Time to detect: %0.2fs' % (time.time() - t0))
+        return page, lst_result
+
     def predictImg(self, image_path):
         import time
         t0 = time.time()
@@ -309,3 +362,7 @@ class Model(object):
                 lst_result.append(temp)
         print('[INFO] Time to detect: %0.2fs' % (time.time() - t0))
         return lst_result
+
+    
+                
+        

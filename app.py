@@ -171,8 +171,40 @@ def getToc2():
 	message["success"] = True
 	message["message"] = "Successfully"
 	message["detected"] = data
+	print(message)
 	return jsonify(message)
 
 
+@app.route('/detect', methods = ['POST'])
+def getAll():
+	print('[INFO] API get caption')
+	if len(os.listdir(app.config['UPLOAD'])) == 10:
+		os.system('rm -rf %s/*' % (app.config['UPLOAD']))
+	session_id = uuid.uuid1()
+	message = {
+		"status" : None, 
+		"message" : '',
+		"total"   : 0,
+		"pages" : [],
+		"ToC" : None
+	}
+	file_p = ''
+	if request.files['file'].filename == '':
+		message["status"] = 201
+		message["message"] = "Not selected file"
+		resp = jsonify({"result" : message })
+		return resp
+	else:
+		file_p = os.path.join(app.config['UPLOAD'], str(session_id) + '.pdf')
+		request.files['file'].save(file_p)
+	data, toc = App.detectAll(file_p)
+	message["status"] = 200
+	message["message"] = "Successfully"
+	message["total"]   = len(data)
+	message["pages"] = data
+	message["ToC"] = toc
+	# print(message)
+	return jsonify(message)
+
 if __name__ == '__main__':
-	app.run(host= '0.0.0.0', port=9123,debug = False)
+	app.run(host= '0.0.0.0', port=9123, debug = False)

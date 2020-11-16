@@ -59,6 +59,28 @@ class App():
 			result = get_table_of_contents(pdf_p, dict_figure)
 		return result
 	
+ 
+	def detectAll(self, pdf_p):
+		os.system('rm -rf %s/*' % (self.config['dir']['image']))
+		doc = fitz.Document(pdf_p)
+		data = []
+		dict_figure = dict.fromkeys([str(i) for i in range(doc.pageCount)], None)
+		for page_index in range(doc.pageCount):
+			page = Page(page=doc.loadPage(page_index), index = page_index)
+			page.getImage()
+			img_p = os.path.join(self.config['dir']['image'], str(page_index) + '.png')
+			lst_result = None
+			# if page.isHasFigure() or page.isHasTable():
+			page, lst_result = self.model.predict_v2(image_path = img_p, page = page)
+			page.run(dict_info = lst_result, return_all = True)
+			result = page.extract()
+			data.append(result)
+			# else:
+			# 	lst_result = self.model.predictImg(image_path = img_p)
+			dict_figure[str(page_index)] = lst_result
+		toc = get_table_of_contents_CV(pdf_p, dict_figure)
+		return data, toc
+     
 
 	def detectCaption(self, pdf_p):
 		os.system('rm -rf %s/*' % (self.config['dir']['image']))

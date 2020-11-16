@@ -32,7 +32,7 @@ class Box(object):
         yA = max(self.ymin, box.ymin)
         xB = min(self.xmax, box.xmax)
         yB = min(self.ymax, box.ymax)
-        inter_area = max(0, abs(xA - xB) + 1) * max(0, abs(yA - yB) + 1)
+        inter_area = max(0, xA - xB + 1) * max(0, yA - yB + 1)
         return inter_area
 
     def union(self, box):
